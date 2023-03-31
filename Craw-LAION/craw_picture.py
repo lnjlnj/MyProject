@@ -75,6 +75,8 @@ if __name__ == "__main__":
         for sample in data:
             random_sample.append((sample['url'], sample['caption']))
 
+        print(f'正在下载---{file}----')
         asyncio.run(main(concurrency=2000, random_sample=random_sample,image_save_path=image_save_path,
                          json_save_path=json_save_path))
+        print(f'下载完成---{file}----')
 

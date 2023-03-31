@@ -21,6 +21,7 @@ def get_image_fingerprint(filename):
 def repeat_list_in_fold(folder_path: str, threshold=5):
     filename_list = []
     hash_dict = {}
+    del_list = []
     print('calculate the image fingerprint:')
     for file_name in tqdm(os.listdir(folder_path)):
         if not file_name.endswith('.jpg') and not file_name.endswith('.jpeg') and not file_name.endswith('.png'):
@@ -30,12 +31,13 @@ def repeat_list_in_fold(folder_path: str, threshold=5):
             hash_dict[file_name] = get_image_fingerprint(filename)
             filename_list.append(file_name)
         except:
+            del_list.append(file_name)
             continue
 
     repeat_list = list()
     repeat_list_total = list()
     filename_list_total = filename_list
-    del_list = []
+
 
     while len(filename_list) != 0:
         value = hash_dict[filename_list[0]]
@@ -76,8 +78,8 @@ def delet_repeat_pic(source_path: str, delet_list: list):
 
 
 if __name__ == '__main__':
-    folder_path = '/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/psas/images'
-    output_path = './clip_retrieval_result/output_img_psas2'
+    folder_path = './crawl_result/clipsubset__creative-advertisment/images'
+    output_path = './crawl_result/clipsubset__creative-advertisment/repeat_outputs3'
     repeat_list, del_list = repeat_list_in_fold(folder_path=folder_path, threshold=8)
 
     output_repeat_pic(repeat_list, source_path=folder_path, output_path=output_path)    # 输出重复的图片
