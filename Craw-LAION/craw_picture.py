@@ -1,24 +1,14 @@
 import json
 import aiohttp
 import asyncio
-import pyarrow.parquet as pq
-import pandas as pd
-import random
+import os
 from tqdm import tqdm
 import math
 
-json_path = './clipsubset_metaphor-photo.json'
-with open(json_path, 'r') as f:
-    data = json.load(f)
-
-random_sample = []
-for sample in data:
-    random_sample.append((sample['url'], sample['caption']))
-
-
 
 headers = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/89.0.4389.82 Safari/537.36"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) "
+                  "Chrome/89.0.4389.82 Safari/537.36"
 }
 
 
@@ -41,7 +31,7 @@ async def download_image(sample:tuple, n, record, save_path):
         pass
 
 
-async def main(concurrency:int, image_save_path:str, json_path:str):
+async def main(concurrency:int, random_sample, image_save_path:str, json_save_path:str):
 
     record = []
     num = math.ceil(len(random_sample))
@@ -58,14 +48,33 @@ async def main(concurrency:int, image_save_path:str, json_path:str):
 
         [await f for f in tqdm(asyncio.as_completed(tasks), total=len(tasks))]
 
-    with open(json_path, 'w') as f:
+    with open(f'{json_save_path}/caption.json', 'w') as f:
         json.dump(record, f)
 
 if __name__ == "__main__":
-    type_list = ['metaphor-photo', 'psas']
-    for type in type_list:
-        image_path = f'./{type}/images'
-        json_path = f'./{type}/caption.json'
-        asyncio.run(main(concurrency=2000, image_save_path=image_path,
-                         json_path=json_path))
+
+    all_file = os.listdir('./clip_retrieval_result')
+    json_file = []
+
+    for file_name in all_file:
+        if file_name.endswith('.json'):
+            json_file.append(file_name)
+
+    for file in json_file:
+        json_path = f'./clip_retrieval_result/{file}'
+        image_save_path = f"./crawl_result/{file.split('.')[0]}/images"
+        json_save_path = f"./crawl_result/{file.split('.')[0]}"
+
+        if os.path.exists(image_save_path) is False:
+            os.makedirs(image_save_path)
+
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+
+        random_sample = []
+        for sample in data:
+            random_sample.append((sample['url'], sample['caption']))
+
+        asyncio.run(main(concurrency=2000, random_sample=random_sample,image_save_path=image_save_path,
+                         json_save_path=json_save_path))
 
