@@ -6,37 +6,6 @@ from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
 from PIL import Image
 
-def prepare_optimizer(model, lr, weight_decay, eps):
-    no_decay = ['bias', 'LayerNorm.weight']
-    optimizer_grouped_parameters = [{
-        'params': [
-            p for n, p in model.named_parameters()
-            if not any(nd in n for nd in no_decay)
-        ],
-        'weight_decay':
-            weight_decay,
-    }, {
-        'params': [
-            p for n, p in model.named_parameters()
-            if any(nd in n for nd in no_decay)
-        ],
-        'weight_decay':
-            0.0,
-    }]
-    optimizer = AdamW(optimizer_grouped_parameters, lr=lr, eps=eps)
-    return optimizer
-
-
-def prepare_scheduler(optimizer, epochs, steps_per_epoch, warmup_rate):
-    total_steps = epochs * steps_per_epoch
-    warmup_steps = int(total_steps * warmup_rate)
-    scheduler = get_scheduler(
-        name='linear',
-        optimizer=optimizer,
-        num_warmup_steps=warmup_steps,
-        num_training_steps=total_steps)
-    return scheduler
-
 
 class Trainer:
     def __init__(self, model, use_gpu, *args, **kwargs):
