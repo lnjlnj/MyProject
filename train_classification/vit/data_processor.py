@@ -1,4 +1,5 @@
 import json
+import logging
 import random
 import os
 import pickle
@@ -10,6 +11,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 import pyarrow as pa
 import pyarrow.parquet as pq
+
 
 
 class MyDataset(Dataset):
@@ -30,7 +32,7 @@ def processor_the_data(original_json_path:str, img_path:str, save_path:str):
 
     dataloader = DataLoader(
         dataset=dataset,
-        batch_size=20,
+        batch_size=1,
         shuffle=True)
 
     datas = []
@@ -41,6 +43,9 @@ def processor_the_data(original_json_path:str, img_path:str, save_path:str):
         for pic in batch['pic_id']:
             image = Image.open(f'{img_path}/{pic}').convert('RGB')
             images.append(image)
+
+
+
 
         inputs = processor(images=images, return_tensors="pt")
         for n in range(len(images)):
@@ -59,7 +64,7 @@ def processor_the_data2(original_json_path:str, img_path:str, save_path:str):
 
     dataloader = DataLoader(
         dataset=dataset,
-        batch_size=20,
+        batch_size=1,
         shuffle=True)
 
     datas = []
@@ -95,11 +100,20 @@ def processor_the_data2(original_json_path:str, img_path:str, save_path:str):
 
 
 if __name__ == '__main__':
-    json_path = '/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/test_label.json'
 
-    img_path = '/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/images'
-    processor = ViTImageProcessor.from_pretrained('google/vit-base-patch16-224')
-    save_path = './test.arrow'
+    json_path = '/media/lei/sda_2T/MyGithub/dataset/test_dataset/label.json'
+
+    img_path = '/media/lei/sda_2T/MyGithub/dataset/test_dataset/images'
+    with open(json_path, 'r') as f:
+        data = json.load(f)
+    for n in data:
+        if n['pic_id'] == '5516.jpg':
+            data.remove(n)
+    with open(json_path, 'w') as f:
+        json.dump(data, f)
+    model_path = '/media/lei/sda_2T/MyGithub/model/vit-base/original'
+    processor = ViTImageProcessor.from_pretrained(model_path)
+    save_path = './test.pkl'
 
     processor_the_data(json_path, img_path, save_path)
 
