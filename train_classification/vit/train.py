@@ -42,22 +42,25 @@ for n in data_1:
     pic_id = n['pic_id']
     n['pic_id'] = f"/media/lei/sda_2T/MyGithub/dataset/test_dataset/images/{pic_id}"
 dataset = MyDataset(data_1)
-# dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
-#
-# for batch_data in dataloader:
-#     images = []
-#     for pic in batch_data['pic_id']:
-#         image = Image.open(pic).convert('RGB')
-#         images.append(image)
-#
-#     inputs = processor(images=images, return_tensors="pt")
-#     inputs.to(device)
-#     outputs = model(**inputs)
+dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
 
-trainer = Trainer(model=model, use_gpu=True, processor=processor,
-                  train_dataset=dataset, eval_dataset=dataset)
+for batch_data in dataloader:
+    images = []
+    for pic in batch_data['pic_id']:
+        image = Image.open(pic).convert('RGB')
+        images.append(image)
 
-trainer.train()
+    inputs = processor(images=images, return_tensors="pt")
+    print(1)
+
+
+
+
+
+# trainer = Trainer(model=model, use_gpu=True, processor=processor,
+#                   train_dataset=dataset, eval_dataset=dataset)
+#
+# trainer.train()
 print(1)
 
 
