@@ -14,7 +14,7 @@ from classification_trainer import Trainer
 
 
 device = 'cuda'
-model_path = '/media/lei/sda_2T/MyGithub/model/vit-base/original'
+model_path = 'google/vit-base-patch16-224'
 #
 processor = ViTImageProcessor.from_pretrained(model_path)
 #
@@ -36,11 +36,11 @@ class MyDataset(Dataset):
         return len(self.data)
 
 
-with open('/media/lei/sda_2T/MyGithub/dataset/test_dataset/label.json', 'r') as f:
+with open('/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/test_label.json', 'r') as f:
     data_1 = json.load(f)
 for n in data_1:
     pic_id = n['pic_id']
-    n['pic_id'] = f"/media/lei/sda_2T/MyGithub/dataset/test_dataset/images/{pic_id}"
+    n['pic_id'] = f"/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/images/{pic_id}"
 dataset = MyDataset(data_1)
 # dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
 #

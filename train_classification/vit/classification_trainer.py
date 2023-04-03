@@ -52,17 +52,20 @@ class Trainer:
                 for pic in batch['pic_id']:
                     image = Image.open(pic).convert('RGB')
                     images.append(image)
-                inputs = self.processor(images=images, return_tensors="pt").to(self.device)
-                batch['label'].to(self.device)
-                outputs = self.model(**inputs)
-                loss = criterion(outputs.logits, batch['label'].to(self.device))
+                try:
+                    inputs = self.processor(images=images, return_tensors="pt").to(self.device)
+                    batch['label'].to(self.device)
+                    outputs = self.model(**inputs)
+                    loss = criterion(outputs.logits, batch['label'].to(self.device))
 
-                optimizer.step()
+                    optimizer.step()
 
-                if accumulation_steps > 1:
-                    loss = loss / accumulation_steps
+                    if accumulation_steps > 1:
+                        loss = loss / accumulation_steps
 
-                loss.backward()
+                    loss.backward()
+                except:
+                    print(1)
 
 
 
