@@ -11,10 +11,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, Dataset
 import requests
 from classification_trainer import Trainer
-
+import pyarrow.parquet as pq
 
 device = 'cuda'
-model_path = 'google/vit-base-patch16-224'
+model_path = '/media/lei/sda_2T/MyGithub/model/vit-base/original'
 #
 processor = ViTImageProcessor.from_pretrained(model_path)
 #
@@ -23,6 +23,7 @@ processor = ViTImageProcessor.from_pretrained(model_path)
 model = ViTForImageClassification.from_pretrained(model_path)
 model.classifier = nn.Linear(768, 2)
 model.to(device)
+
 
 # Dataloader
 class MyDataset(Dataset):
@@ -36,38 +37,20 @@ class MyDataset(Dataset):
         return len(self.data)
 
 
-with open('/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/test_label.json', 'r') as f:
-    data_1 = json.load(f)
-for n in data_1:
-    pic_id = n['pic_id']
-    n['pic_id'] = f"/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/images/{pic_id}"
-dataset = MyDataset(data_1)
-dataloader = DataLoader(dataset, batch_size=2, shuffle=True)
+pq_data = pq.read_table('./test.parquet')
+df = pq_data.to_pandas()
 
-for batch_data in dataloader:
-    images = []
-    for pic in batch_data['pic_id']:
-        image = Image.open(pic).convert('RGB')
-        images.append(image)
+data = []
+for index, rows in df.iterrows():
+    image = rows['image'].reshape(3, 224, 224)
+    label = rows['label']
+    data.append({'image': torch.from_numpy(image), 'label': torch.from_numpy(label)})
 
-    inputs = processor(images=images, return_tensors="pt")
-    print(1)
+train_dataset = MyDataset(data)
+train_dataloader = DataLoader(dataset=train_dataset, shuffle=True, batch_size=10)
 
 
+trainer = Trainer(model=model, use_gpu=True, processor=processor,
+                  train_dataset=train_dataset[:-100], eval_dataset=train_dataset[-100:])
 
-
-
-# trainer = Trainer(model=model, use_gpu=True, processor=processor,
-#                   train_dataset=dataset, eval_dataset=dataset)
-#
-# trainer.train()
-print(1)
-
-
-
-# inputs = processor(images=image, return_tensors="pt")
-# outputs = model(**inputs)
-# logits = outputs.logits
-# # model predicts one of the 1000 ImageNet classes
-# predicted_class_idx = logits.argmax(-1).item()
-# print("Predicted class:", model.config.id2label[predicted_class_idx])
+trainer.train(eval_epoch=5)
