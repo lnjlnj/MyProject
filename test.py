@@ -15,12 +15,14 @@ model_path = 'google/vit-base-patch16-224'
 #
 processor = ViTImageProcessor.from_pretrained(model_path)
 
-pic_id_list = os.listdir('/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/images')
+pic_id_list = os.listdir(
+    '/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/images')
 data = []
 image_path = '/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/images'
 for id in pic_id_list:
     cate = random.randint(0, 1)
-    data.append({'pic_id':f'{image_path}/{id}', 'label':cate})
+    data.append({'pic_id': f'{image_path}/{id}', 'label': cate})
+
 
 class MyDataset(Dataset):
     def __init__(self, data):
@@ -32,11 +34,12 @@ class MyDataset(Dataset):
     def __len__(self):
         return len(self.data)
 
+
 dataset = MyDataset(data[:100])
 dataloader = DataLoader(
-            dataset=dataset,
-            batch_size=20,
-            shuffle=True)
+    dataset=dataset,
+    batch_size=20,
+    shuffle=True)
 
 datas = []
 for batch in tqdm.tqdm(dataloader):
@@ -48,7 +51,7 @@ for batch in tqdm.tqdm(dataloader):
 
     inputs = processor(images=images, return_tensors="pt")
     for n in range(len(images)):
-        batch_data.append({'image':inputs['pixel_values'][n], 'label':batch['label'][n]})
+        batch_data.append({'image': inputs['pixel_values'][n], 'label': batch['label'][n]})
     datas += batch_data
 with open('./test.pkl', 'wb') as f:
     pickle.dump(datas, f)
@@ -60,7 +63,6 @@ with open('./test.pkl', 'rb') as f:
 # # tes = [pa.array(n) for n in df['image']]
 # # table = pa.Table.from_arrays(tes, names=['image'])
 # table = pa.Table.from_arrays(df['image'], names=['image'])
-
 
 
 print(1)
