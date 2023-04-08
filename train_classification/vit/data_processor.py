@@ -3,7 +3,6 @@ import logging
 import random
 import os
 import pickle
-
 import pandas as pd
 import tqdm
 from transformers import ViTImageProcessor, ViTForImageClassification, ViTConfig
@@ -11,6 +10,7 @@ from PIL import Image
 from torch.utils.data import DataLoader, Dataset
 import pyarrow as pa
 import pyarrow.parquet as pq
+import math
 
 
 class MyDataset(Dataset):
@@ -27,41 +27,65 @@ class MyDataset(Dataset):
 def processor_the_data(original_json_path: str, img_path: str, save_path: str):
     with open(original_json_path, 'r') as f:
         data = json.load(f)
-    dataset = MyDataset(data)
 
-    dataloader = DataLoader(
-        dataset=dataset,
-        batch_size=20,
-        shuffle=True)
+    split_num = 10000
+    part_num = math.ceil(len(data) / split_num)
+    random.shuffle(data)
+    data_total = []
 
-    datas = []
-    print('-----数据处理进度-----')
-    for batch in tqdm.tqdm(dataloader):
-        images = []
-        batch_data = []
-        for pic in batch['pic_id']:
-            image = Image.open(f'{img_path}/{pic}').convert('RGB')
-            images.append(image)
+    if os.path.exists(save_path) is False:
+        os.makedirs(save_path)
 
-        inputs = processor(images=images, return_tensors="pt")
-        for n in range(len(images)):
-            batch_data.append({'image': inputs['pixel_values'][n].numpy().reshape(3 * 224 * 224),
-                               'label': batch['label'][n].numpy().reshape(1)})
+    for n in range(part_num):
+        if split_num * n < len(data):
+            data_total.append(data[n*split_num:n*split_num+split_num])
+        else:
+            data_total.append(data[n*split_num:])
+    i = 0
+    for data in data_total:
+        i += 1
+        dataset = MyDataset(data)
+        dataloader = DataLoader(
+            dataset=dataset,
+            batch_size=1,
+            shuffle=True)
+        datas = []
 
-        datas += batch_data
+        print(f'-----数据处理进度(part {i}/{len(data_total)})-----')
+        for batch in tqdm.tqdm(dataloader):
+            images = []
+            batch_data = []
+            for pic in batch['pic_id']:
+                Image.MAX_IMAGE_PIXELS = 89478485
+                try:
+                    image = Image.open(f'{img_path}/{pic}').convert('RGB')
+                    images.append(image)
+                except:
+                    continue
 
-    df = pd.DataFrame(datas)
-    table = pa.Table.from_pandas(df, preserve_index=False)
-    pq.write_table(table, save_path)
+            inputs = processor(images=images, return_tensors="pt")
+            for n in range(len(images)):
+                batch_data.append({'image': inputs['pixel_values'][n].numpy().reshape(3 * 224 * 224),
+                                   'label': batch['label'][n].numpy().reshape(1)})
+
+            datas += batch_data
+
+        temp_file = f'{save_path}/part{i}.parquet'
+        df = pd.DataFrame(datas)
+        table = pa.Table.from_pandas(df, preserve_index=False)
+        pq.write_table(table, temp_file)
+        datas = []
+        df = None
 
     return print(f'-----数据预处理完成, 文件保存至{save_path}-----')
 
 
 if __name__ == '__main__':
-    json_path = '/media/lei/sda_2T/MyGithub/dataset/test_dataset/label.json'
-    img_path = '/media/lei/sda_2T/MyGithub/dataset/test_dataset/images'
-    model_path = '/media/lei/sda_2T/MyGithub/model/vit-base/original'
+    json_path = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/train_binary.json'
+    img_path = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/total'
+    model_path = '/home/leiningjie/PycharmProjects/model/vit/vit-base/original'
     processor = ViTImageProcessor.from_pretrained(model_path)
-    save_path = './test.parquet'
+    save_path = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/train'
 
     processor_the_data(json_path, img_path, save_path)
+

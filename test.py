@@ -1,68 +1,31 @@
-import json
-import random
-import os
-import pickle
-import tqdm
-from transformers import ViTImageProcessor, ViTForImageClassification, ViTConfig
-from PIL import Image
-from torch.utils.data import DataLoader, Dataset
-
-import pandas as pd
-import pyarrow as pa
+"""
+create binary label
+"""
 import pyarrow.parquet as pq
+import os
+import pandas as pd
+import torch
 
-model_path = 'google/vit-base-patch16-224'
-#
-processor = ViTImageProcessor.from_pretrained(model_path)
-
-pic_id_list = os.listdir(
-    '/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/images')
+father_dir = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/temp'
+parquet_list = os.listdir(father_dir)
+df_list = []
 data = []
-image_path = '/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/images'
-for id in pic_id_list:
-    cate = random.randint(0, 1)
-    data.append({'pic_id': f'{image_path}/{id}', 'label': cate})
+for file in parquet_list:
+    parquet_path = f'{father_dir}/{file}'
+    pq_data = pq.read_table(parquet_path)
+    df = pq_data.to_pandas()
 
+    for index, rows in df.iterrows():
+        image = rows['image'].reshape(3, 224, 224)
+        label = rows['label']
+        data.append({'image': torch.from_numpy(image), 'label': torch.from_numpy(label)})
+    print(1)
 
-class MyDataset(Dataset):
-    def __init__(self, data):
-        self.data = data
+for file in parquet_list:
 
-    def __getitem__(self, index):
-        return self.data[index]
-
-    def __len__(self):
-        return len(self.data)
-
-
-dataset = MyDataset(data[:100])
-dataloader = DataLoader(
-    dataset=dataset,
-    batch_size=20,
-    shuffle=True)
-
-datas = []
-for batch in tqdm.tqdm(dataloader):
-    images = []
-    batch_data = []
-    for pic in batch['pic_id']:
-        image = Image.open(pic).convert('RGB')
-        images.append(image)
-
-    inputs = processor(images=images, return_tensors="pt")
-    for n in range(len(images)):
-        batch_data.append({'image': inputs['pixel_values'][n], 'label': batch['label'][n]})
-    datas += batch_data
-with open('./test.pkl', 'wb') as f:
-    pickle.dump(datas, f)
-
-with open('./test.pkl', 'rb') as f:
-    data_1 = pickle.load(f)
-
-# df = pd.DataFrame(datas)
-# # tes = [pa.array(n) for n in df['image']]
-# # table = pa.Table.from_arrays(tes, names=['image'])
-# table = pa.Table.from_arrays(df['image'], names=['image'])
+    file_path = f'{father_dir}/{file}'
+    df = pd.read_parquet(file_path)
+    df_list.append(df)
 
 
 print(1)

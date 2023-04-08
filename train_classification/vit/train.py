@@ -12,9 +12,14 @@ from torch.utils.data import DataLoader, Dataset
 import requests
 from classification_trainer import Trainer
 import pyarrow.parquet as pq
+import os
+import argparse
 
+
+# device = 'cuda'
+os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 device = 'cuda'
-model_path = '/media/lei/sda_2T/MyGithub/model/vit-base/original'
+model_path = '/home/leiningjie/PycharmProjects/model/vit/vit-base/original'
 #
 processor = ViTImageProcessor.from_pretrained(model_path)
 #
@@ -37,20 +42,50 @@ class MyDataset(Dataset):
         return len(self.data)
 
 
-pq_data = pq.read_table('./test.parquet')
-df = pq_data.to_pandas()
+def create_parquet_data(parquet_path:str):
+    pq_data = pq.read_table(parquet_path)
+    df = pq_data.to_pandas()
+    data = []
+    for index, rows in df.iterrows():
+        image = rows['image'].reshape(3, 224, 224)
+        label = rows['label']
+        data.append({'image': torch.from_numpy(image), 'label': torch.from_numpy(label)})
 
-data = []
-for index, rows in df.iterrows():
-    image = rows['image'].reshape(3, 224, 224)
-    label = rows['label']
-    data.append({'image': torch.from_numpy(image), 'label': torch.from_numpy(label)})
+    train_dataset = MyDataset(data)
 
-train_dataset = MyDataset(data)
-train_dataloader = DataLoader(dataset=train_dataset, shuffle=True, batch_size=10)
+    return train_dataset
 
 
-trainer = Trainer(model=model, use_gpu=True, processor=processor,
-                  train_dataset=train_dataset[:-100], eval_dataset=train_dataset[-100:])
+def create_data(json_path, img_path):
+    with open(json_path) as f:
+        data = json.load(f)
+    for n in data:
+        pic_id = n['pic_id']
+        n['pic_id'] = f"{img_path}/{pic_id}"
+    dataset = MyDataset(data)
 
-trainer.train(eval_epoch=5)
+    return dataset
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model_path', type=str, required=True, help='your name')
+    # 添加一个参数：--age，类型为整数，默认值为 18，缩写为-a
+    parser.add_argument('-a', '--age', type=int, default=18, help='your age')
+    # 添加一个参数：--gender，类型为字符串，可选值为 male 或 female，默认值为 male
+    # 缩写为-g，choices 参数指定可选值列表
+    parser.add_argument('-g', '--gender', type=str, choices=['male', 'female'], default='male', help='your gender')
+
+    args = parser.parse_args()
+    img_path = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/total'
+
+    train_path = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/train'
+    test_parquet = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/test_binary.json'
+
+    train_parquet_list = os.listdir(train_path)
+    test_dataset = create_data(test_parquet, img_path=img_path)
+
+    trainer = Trainer(model=model, use_gpu=True, processor=processor,
+                      train_path=train_path, eval_dataset=test_dataset)
+
+    trainer.train_with_parquet(eval_epoch=3, batch_size=128)
