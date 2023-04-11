@@ -75,7 +75,7 @@ class Trainer:
         eval_record = []
 
         for epoch in range(total_epoches):
-            n = random.randint(0, len(train_parquet_list))
+            n = random.randint(0, len(train_parquet_list)-1)
             train_dataset = create_parquet_data(f'{self.train_path}/{train_parquet_list[n]}')
             train_loader = DataLoader(
                 dataset=train_dataset,

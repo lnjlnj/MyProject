@@ -16,3 +16,8 @@
 
 
 ”“”
+
+"""
+分类pipline:
+dataprocess存为parquet文件  ————> train
+"""

@@ -79,4 +79,3 @@ if __name__ == "__main__":
         asyncio.run(main(concurrency=2000, random_sample=random_sample,image_save_path=image_save_path,
                          json_save_path=json_save_path))
         print(f'下载完成---{file}----')
-

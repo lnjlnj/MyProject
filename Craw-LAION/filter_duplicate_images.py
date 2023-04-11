@@ -78,8 +78,8 @@ def delet_repeat_pic(source_path: str, delet_list: list):
 
 
 if __name__ == '__main__':
-    folder_path = '/home/ubuntu/sda_8T/codespace/new_lei/Dataset/LAION/clip_retrieval/creative-advertisment/images'
-    output_path = './crawl_result/clipsubset__creative-advertisment/repeat_outputs3'
+    folder_path = '/home/leiningjie/PycharmProjects/MyGithub/MyProject/Craw-LAION/crawl_result/clipsubset_psas/images'
+    output_path = '/home/leiningjie/PycharmProjects/MyGithub/MyProject/Craw-LAION/crawl_result/clipsubset__creative-advertisment/repeat_1'
     repeat_list, del_list = repeat_list_in_fold(folder_path=folder_path, threshold=8)
 
     # output_repeat_pic(repeat_list, source_path=folder_path, output_path=output_path)    # 输出重复的图片

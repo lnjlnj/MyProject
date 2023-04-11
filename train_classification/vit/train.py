@@ -68,19 +68,11 @@ def create_data(json_path, img_path):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--model_path', type=str, required=True, help='your name')
-    # 添加一个参数：--age，类型为整数，默认值为 18，缩写为-a
-    parser.add_argument('-a', '--age', type=int, default=18, help='your age')
-    # 添加一个参数：--gender，类型为字符串，可选值为 male 或 female，默认值为 male
-    # 缩写为-g，choices 参数指定可选值列表
-    parser.add_argument('-g', '--gender', type=str, choices=['male', 'female'], default='male', help='your gender')
 
-    args = parser.parse_args()
-    img_path = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/total'
+    img_path = '/home/leiningjie/PycharmProjects/dataset/metaphor/total'
 
-    train_path = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/train'
-    test_parquet = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/test_binary.json'
+    train_path = '/home/leiningjie/PycharmProjects/dataset/metaphor/train'
+    test_parquet = '/home/leiningjie/PycharmProjects/dataset/metaphor/test_binary.json'
 
     train_parquet_list = os.listdir(train_path)
     test_dataset = create_data(test_parquet, img_path=img_path)
@@ -88,4 +80,4 @@ if __name__ == '__main__':
     trainer = Trainer(model=model, use_gpu=True, processor=processor,
                       train_path=train_path, eval_dataset=test_dataset)
 
-    trainer.train_with_parquet(eval_epoch=3, batch_size=128)
+    trainer.train_with_parquet(eval_epoch=3, batch_size=128, total_epoches=50)

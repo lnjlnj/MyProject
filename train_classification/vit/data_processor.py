@@ -81,11 +81,16 @@ def processor_the_data(original_json_path: str, img_path: str, save_path: str):
 
 
 if __name__ == '__main__':
-    json_path = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/train_binary.json'
-    img_path = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/total'
+    # json:[{'pic_id': 'xxx.jpg', 'label':0}....]
+    json_path = '/home/leiningjie/PycharmProjects/dataset/metaphor/train_binary.json'
+    # total image directory
+    img_path = '/home/leiningjie/PycharmProjects/dataset/metaphor/total'
+    # save directory
     model_path = '/home/leiningjie/PycharmProjects/model/vit/vit-base/original'
+    # processor dir
     processor = ViTImageProcessor.from_pretrained(model_path)
-    save_path = '/home/leiningjie/PycharmProjects/dataset/advertisement_flickr30k_binary/train'
+    # parquet file save path
+    save_path = '/home/leiningjie/PycharmProjects/dataset/metaphor/train'
 
     processor_the_data(json_path, img_path, save_path)
 
