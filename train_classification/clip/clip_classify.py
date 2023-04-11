@@ -74,8 +74,6 @@ if __name__ == '__main__':
                             new_batch.append(abs_path)
                     elif len(img_array.shape) != 3:
                         continue
-
-
                 except:
                     continue
 
@@ -86,7 +84,7 @@ if __name__ == '__main__':
             probs = logits_per_image.softmax(dim=1)  # we can take the softmax to get the label probabilities  0000
             predict = list(torch.argmax(probs, dim=-1).to('cpu').numpy())
 
-            df = pandas.DataFrame({'image_abs_path':new_batch,
+            df = pd.DataFrame({'image_abs_path':new_batch,
                                    'predict':predict})
             if os.path.exists(result_path) is False:
                 df.to_csv(result_path, index=False)

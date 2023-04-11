@@ -20,4 +20,10 @@
 """
 分类pipline:
 dataprocess存为parquet文件  ————> train
+
+训练策略
+1.匹兹堡广告与普通图片二分类————>隐喻二分类
+2.隐喻图片与普通图片二分类
+3.隐喻图片与clip中的creative advertisement二分类
+
 """

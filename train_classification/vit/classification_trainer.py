@@ -1,6 +1,6 @@
 import os.path
 import random
-
+import numpy as np
 import torch
 from torch.utils.data import DataLoader, Dataset
 from transformers import AdamW, get_scheduler
@@ -10,7 +10,7 @@ from tqdm import tqdm
 from PIL import Image
 from sklearn.metrics import accuracy_score
 import pyarrow.parquet as pq
-
+import pandas as pd
 
 class MyDataset(Dataset):
     def __init__(self, data):
@@ -128,24 +128,29 @@ class Trainer:
                         if max(eval_record) == accuracy:
                             if os.path.exists(f'./checkpoint') is False:
                                 os.mkdir(f'./checkpoint')
-                            model_save_path = f'./checkpoint/epoch{epoch}_acc_{accuracy}.pt'
+                            model_save_path = f'./checkpoint/acc_{accuracy}.pt'
                             torch.save(model.state_dict(), model_save_path)
                             print(f'\nepoch{epoch}达到测试集最高准确度{accuracy}，模型保存至{model_save_path}')
 
-    def eval(self, batch_size=10):
-        self.model.to(self.device)
+    def eval(self, batch_size=10, model_path=''):
+        state_dict = torch.load(model_path)
+        model = self.model
+        model.load_state_dict(state_dict)
         predicts = []
         labels = []
         with torch.no_grad():
-            self.model.eval()
+            model.eval()
             test_loader = DataLoader(
                 dataset=self.eval_dataset,
                 batch_size=batch_size,
                 shuffle=True)
             for index, batch in enumerate(tqdm(test_loader)):
-                image_tensor = batch['image'].to(self.device)
-                label = batch['label'].squeeze(1).to(self.device)
-                inputs = {'pixel_values': image_tensor}
+                label = batch['label'].to(self.device)
+                images = []
+                for pic in batch['pic_id']:
+                    image = Image.open(pic).convert('RGB')
+                    images.append(image)
+                inputs = self.processor(images=images, return_tensors="pt").to(self.device)
                 outputs = self.model(**inputs)
                 predict = torch.argmax(outputs.logits, dim=-1)
                 y_pred = predict.to('cpu').numpy().tolist()
@@ -155,3 +160,57 @@ class Trainer:
 
             accuracy = accuracy_score(labels, predicts)
             print(f'eval_dataset的准确率为{accuracy}')
+
+    def inference(self, batch_size=10, model_path='', result_path=''):
+        state_dict = torch.load(model_path)
+        model = self.model
+        model.load_state_dict(state_dict)
+        predicts = []
+        labels = []
+        with torch.no_grad():
+            model.eval()
+            test_loader = DataLoader(
+                dataset=self.eval_dataset,
+                batch_size=batch_size,
+                shuffle=True)
+            for index, batch in enumerate(tqdm(test_loader)):
+                images = []
+                new_batch = []
+                for abs_path in batch:
+                    try:
+                        image = Image.open(abs_path)
+                        img_array = np.array(image)
+                        if img_array.shape[-1] == 3 and len(img_array.shape) == 3:
+                            np_content = img_array[0][0][0]
+                            if np.all(img_array == np_content):
+                                continue
+                            else:
+                                images.append(image)
+                                new_batch.append(abs_path)
+                        elif img_array.shape[-1] == 4 and len(img_array.shape) == 3:
+                            image = Image.open(abs_path).convert('RGB')
+                            img_array = np.array(image)
+                            np_content = img_array[0][0][0]
+                            if np.all(img_array == np_content):
+                                continue
+                            else:
+                                images.append(image)
+                                new_batch.append(abs_path)
+                        elif len(img_array.shape) != 3:
+                            continue
+                    except:
+                        continue
+                inputs = self.processor(images=images, return_tensors="pt").to(self.device)
+                outputs = self.model(**inputs)
+                predict = torch.argmax(outputs.logits, dim=-1)
+                predict = predict.to('cpu').numpy().tolist()
+
+                df = pd.DataFrame({'image_abs_path': new_batch,
+                                       'predict': predict})
+                if os.path.exists(result_path) is False:
+                    df.to_csv(result_path, index=False)
+                elif os.path.exists(result_path) is True:
+                    df.to_csv(result_path, mode='a', index=False, header=False)
+
+
+

@@ -1,5 +1,5 @@
 import json
-
+import pandas as pd
 import torch
 from transformers import ViTImageProcessor, ViTForImageClassification, ViTConfig
 from PIL import Image
@@ -14,6 +14,7 @@ from classification_trainer import Trainer
 import pyarrow.parquet as pq
 import os
 import argparse
+from tqdm import tqdm
 
 
 # device = 'cuda'
@@ -67,17 +68,28 @@ def create_data(json_path, img_path):
     return dataset
 
 
+def create_data_from_csv(csv_path):
+    df = pd.read_csv(csv_path)
+    df = df.sample(n=10000, ignore_index=True)
+    data = df['image_abs_path'].tolist()
+    dataset = MyDataset(data)
+
+    return dataset
+
+
+
 if __name__ == '__main__':
 
-    img_path = '/home/leiningjie/PycharmProjects/dataset/metaphor/total'
+    inference_csv_path = '/home/leiningjie/PycharmProjects/dataset/LAION/LAION-2B-en/0/record.csv'
+    result_path = '/home/leiningjie/PycharmProjects/dataset/LAION/LAION-2B-en/0/vit_binary_result.csv'
 
-    train_path = '/home/leiningjie/PycharmProjects/dataset/metaphor/train'
-    test_parquet = '/home/leiningjie/PycharmProjects/dataset/metaphor/test_binary.json'
-
-    train_parquet_list = os.listdir(train_path)
-    test_dataset = create_data(test_parquet, img_path=img_path)
+    test_dataset = create_data_from_csv(inference_csv_path)
+    test_loader = DataLoader(
+        dataset=test_dataset,
+        batch_size=10,
+        shuffle=True)
 
     trainer = Trainer(model=model, use_gpu=True, processor=processor,
-                      train_path=train_path, eval_dataset=test_dataset)
+                      train_path=None, eval_dataset=test_dataset)
 
-    trainer.train_with_parquet(eval_epoch=3, batch_size=128, total_epoches=10)
+    trainer.inference(batch_size=1500, model_path='./checkpoint/acc_0.934.pt', result_path=result_path)
