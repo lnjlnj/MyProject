@@ -18,7 +18,7 @@ from tqdm import tqdm
 
 
 # device = 'cuda'
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+os.environ['CUDA_VISIBLE_DEVICES'] = '1'
 device = 'cuda'
 model_path = '/home/leiningjie/PycharmProjects/model/vit/vit-base/original'
 #
@@ -57,33 +57,32 @@ def create_parquet_data(parquet_path:str):
     return train_dataset
 
 
-def create_data(json_path, img_path):
-    with open(json_path) as f:
-        data = json.load(f)
-    for n in data:
-        pic_id = n['pic_id']
-        n['pic_id'] = f"{img_path}/{pic_id}"
-    dataset = MyDataset(data)
-
-    return dataset
 
 
-def create_data_from_csv(csv_path):
-    df = pd.read_csv(csv_path)
-    df = df.sample(n=10000, ignore_index=True)
-    data = df['image_abs_path'].tolist()
-    dataset = MyDataset(data)
+def create_data(csv_path=None, json_path=None):
+    if csv_path is not None:
+        df = pd.read_csv(csv_path)
+        df = df.sample(n=10000, ignore_index=True)
+        data = df['image_abs_path'].tolist()
+        dataset = MyDataset(data)
 
-    return dataset
+        return dataset
+
+    elif json_path is not None:
+        with open(json_path, 'r') as f:
+            data = json.load(f)
+        dataset = MyDataset(data)
+
+        return dataset
 
 
 
 if __name__ == '__main__':
 
-    inference_csv_path = '/home/leiningjie/PycharmProjects/dataset/LAION/LAION-2B-en/0/record.csv'
+    inference_path = '/home/leiningjie/PycharmProjects/dataset/LAION/LAION-2B-en/0/test.json'
     result_path = '/home/leiningjie/PycharmProjects/dataset/LAION/LAION-2B-en/0/vit_binary_result.csv'
 
-    test_dataset = create_data_from_csv(inference_csv_path)
+    test_dataset = create_data(json_path=inference_path)
     test_loader = DataLoader(
         dataset=test_dataset,
         batch_size=10,
@@ -92,4 +91,5 @@ if __name__ == '__main__':
     trainer = Trainer(model=model, use_gpu=True, processor=processor,
                       train_path=None, eval_dataset=test_dataset)
 
-    trainer.inference(batch_size=1500, model_path='./checkpoint/acc_0.934.pt', result_path=result_path)
+    trainer.inference(batch_size=500, model_path='./checkpoint/acc_0.9785.pt', result_path=result_path,
+                      threshold=0.9)

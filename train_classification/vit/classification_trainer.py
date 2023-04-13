@@ -12,6 +12,7 @@ from sklearn.metrics import accuracy_score
 import pyarrow.parquet as pq
 import pandas as pd
 
+
 class MyDataset(Dataset):
     def __init__(self, data):
         self.data = data
@@ -108,7 +109,7 @@ class Trainer:
                         model.eval()
                         test_loader = DataLoader(
                             dataset=self.eval_dataset,
-                            batch_size=batch_size,
+                            batch_size=800,
                             shuffle=True)
                         for index, batch in enumerate(tqdm(test_loader)):
                             label = batch['label'].to(self.device)
@@ -161,7 +162,7 @@ class Trainer:
             accuracy = accuracy_score(labels, predicts)
             print(f'eval_dataset的准确率为{accuracy}')
 
-    def inference(self, batch_size=10, model_path='', result_path=''):
+    def inference(self, batch_size=10, model_path='', result_path='', threshold=None):
         state_dict = torch.load(model_path)
         model = self.model
         model.load_state_dict(state_dict)
@@ -202,8 +203,18 @@ class Trainer:
                         continue
                 inputs = self.processor(images=images, return_tensors="pt").to(self.device)
                 outputs = self.model(**inputs)
-                predict = torch.argmax(outputs.logits, dim=-1)
-                predict = predict.to('cpu').numpy().tolist()
+                if threshold is None:
+                    predict = torch.argmax(outputs.logits, dim=-1)
+                    predict = predict.to('cpu').numpy().tolist()
+                else:
+                    predict_1 = torch.softmax(outputs.logits, dim=-1)
+                    predict_1 = predict_1.to('cpu').numpy().tolist()
+                    predict = []
+                    for n in predict_1:
+                        if n[1] > threshold:
+                            predict.append(1)
+                        else:
+                            predict.append(0)
 
                 df = pd.DataFrame({'image_abs_path': new_batch,
                                        'predict': predict})

@@ -80,4 +80,4 @@ if __name__ == '__main__':
     trainer = Trainer(model=model, use_gpu=True, processor=processor,
                       train_path=train_path, eval_dataset=test_dataset)
 
-    trainer.train_with_parquet(eval_epoch=3, batch_size=128, total_epoches=10)
+    trainer.train_with_parquet(eval_epoch=3, batch_size=128, total_epoches=100)
